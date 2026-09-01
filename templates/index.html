@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="600">
+    <title>Weather Display</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: white;
+            box-sizing: border-box;
+        }
+
+        .weather-panel {
+            height: 300px;
+        }
+
+        .current {
+            font-size: 72px;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .condition {
+            font-size: 28px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .hourly {
+            display: flex;
+            gap: 20px;
+        }
+
+        .hour {
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .daily {
+            margin-top: 30px;
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .day {
+            flex: 1;
+            min-width: 0;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .day strong {
+            font-size: 20px;
+        }
+
+        .future-panel {
+            height: 260px;
+            margin-top: 20px;
+        }
+
+        .location {
+            font-size: 20px;
+            opacity: 0.7;
+            margin-bottom: 6px;
+        }
+        
+    </style>
+</head>
+
+<body>
+
+    {% if error %}
+
+        <div class="weather-panel">
+            <div class="condition">
+                Weather data temporarily unavailable.
+            </div>
+        </div>
+
+    {% else %}
+
+        <div class="weather-panel">
+
+            <div class="location">
+                Scottsdale
+            </div>
+
+            <div class="current">
+                {{ hourly[0].temperature }}°{{ hourly[0].temperatureUnit }}
+            </div>
+
+            <div class="condition">
+                {{ hourly[0].shortForecast }}
+            </div>
+
+            <div class="hourly">
+                {% for hour in hourly %}
+                    <div class="hour">
+                        <div>{{ hour.displayTime }}</div>
+                        <div>{{ hour.temperature }}°</div>
+                        <div>{{ hour.probabilityOfPrecipitation.value }}%</div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="daily">
+                {% for period in periods %}
+                    <div class="day">
+                        <strong>{{ period.name }}</strong><br>
+                        {{ period.temperature }}°<br>
+                        {{ period.shortForecast }}
+                    </div>
+                {% endfor %}
+            </div>
+
+        </div>
+
+    {% endif %}
+
+    <div class="future-panel">
+    </div>
+
+</body>
+</html>
