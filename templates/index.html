@@ -15,6 +15,26 @@
             box-sizing: border-box;
         }
 
+        #fullscreen-button {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            min-width: 110px;
+            min-height: 48px;
+            padding: 10px 14px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: #222;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        #fullscreen-button:active {
+            background: #444;
+        }
+
         .weather-panel {
             height: 300px;
         }
@@ -31,32 +51,62 @@
             margin-bottom: 20px;
         }
 
-        .hourly {
-            display: flex;
+        .forecast-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             gap: 20px;
-        }
-
-        .hour {
-            text-align: center;
-            font-size: 18px;
-        }
-
-        .daily {
-            margin-top: 30px;
-            display: flex;
-            gap: 12px;
+            margin-top: 28px;
             width: 100%;
         }
 
-        .day {
-            flex: 1;
-            min-width: 0;
-            font-size: 18px;
-            text-align: center;
+        .hourly,
+        .daily {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 10px;
+            background: #202020;
+            border-radius: 6px;
         }
 
-        .day strong {
+        .hour,
+        .day {
+            min-width: 0;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .day-name {
+            height: 24px;
+            white-space: nowrap;
+        }
+
+        .day-name strong {
             font-size: 20px;
+        }
+
+        .forecast-icon {
+            height: 40px;
+            font-family: "Noto Color Emoji", "Segoe UI Emoji", "Apple Color Emoji", sans-serif;
+            font-size: 32px;
+            line-height: 1.2;
+        }
+
+        .forecast-icon.sunny-icon {
+            color: #ffc107;
+            font-family: Arial, sans-serif;
+        }
+
+        .forecast-temperature {
+            font-size: 32px;
+            line-height: 1.1;
+        }
+
+        .forecast-detail {
+            font-size: 18px;
+            line-height: 1.2;
         }
 
         .future-panel {
@@ -74,6 +124,8 @@
 </head>
 
 <body>
+
+    <button id="fullscreen-button" type="button">Fullscreen</button>
 
     {% if error %}
 
@@ -99,24 +151,42 @@
                 {{ hourly[0].shortForecast }}
             </div>
 
-            <div class="hourly">
-                {% for hour in hourly %}
-                    <div class="hour">
-                        <div>{{ hour.displayTime }}</div>
-                        <div>{{ hour.temperature }}°</div>
-                        <div>{{ hour.probabilityOfPrecipitation.value }}%</div>
-                    </div>
-                {% endfor %}
-            </div>
+            <div class="forecast-grid">
+                <div class="hourly" aria-label="Hourly forecast">
+                    {% for hour in hourly %}
+                        <div class="hour" title="{{ hour.shortForecast }}; Chance of precipitation: {{ hour.probabilityOfPrecipitation.value }}%">
+                            <div>{{ hour.displayTime }}</div>
+                            <div class="forecast-icon{% if hour.symbol == '☀' %} sunny-icon{% endif %}" aria-hidden="true">{{ hour.symbol }}</div>
+                            <div class="forecast-temperature">{{ hour.temperature }}°</div>
+                            <div class="forecast-detail">{{ hour.windSpeed }}</div>
+                            <div class="forecast-detail">
+                                {% if hour.probabilityOfPrecipitation.value is not none %}
+                                    💧 {{ hour.probabilityOfPrecipitation.value }}%
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
 
-            <div class="daily">
-                {% for period in periods %}
-                    <div class="day">
-                        <strong>{{ period.name }}</strong><br>
-                        {{ period.temperature }}°<br>
-                        {{ period.shortForecast }}
-                    </div>
-                {% endfor %}
+                <div class="daily" aria-label="Five-day forecast">
+                    {% for period in periods %}
+                        <div class="day" title="{{ period.dayForecast }}; {{ period.nightForecast }}">
+                            <div class="day-name"><strong>{{ period.name }}</strong></div>
+                            <div class="forecast-icon{% if period.symbol == '☀' %} sunny-icon{% endif %}" aria-hidden="true">{{ period.symbol }}</div>
+                            <div class="forecast-temperature">{{ period.high }}°</div>
+                            {% if period.low is not none %}
+                                <div class="forecast-detail">{{ period.low }}°</div>
+                            {% endif %}
+                            {% if period.precipitationChance is not none %}
+                                <div class="forecast-detail" aria-label="Chance of precipitation">
+                                    💧 {{ period.precipitationChance }}%
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
 
         </div>
@@ -125,6 +195,35 @@
 
     <div class="future-panel">
     </div>
+
+    <script>
+        (function () {
+            var fullscreenButton = document.getElementById("fullscreen-button");
+            var root = document.documentElement;
+
+            fullscreenButton.onclick = function () {
+                var requestFullscreen = root.requestFullscreen ||
+                    root.webkitRequestFullscreen ||
+                    root.mozRequestFullScreen ||
+                    root.msRequestFullscreen;
+
+                if (!requestFullscreen) {
+                    return;
+                }
+
+                try {
+                    var request = requestFullscreen.call(root);
+
+                    // Older implementations may not return a Promise.
+                    if (request && request.catch) {
+                        request.catch(function () {});
+                    }
+                } catch (error) {
+                    // Fullscreen may be unavailable or blocked by the browser.
+                }
+            };
+        }());
+    </script>
 
 </body>
 </html>
