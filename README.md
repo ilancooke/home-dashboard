@@ -14,8 +14,10 @@ Current functionality:
 
 - Flask web application
 - National Weather Service API integration
-- Current/hourly weather display
-- Multi-period forecast
+- Current conditions display
+- Five-hour forecast with weather icons, temperature, wind speed, and precipitation chance
+- Five-day forecast with weather icons, daily high/low temperatures, and precipitation chance
+- Fullscreen button using the browser Fullscreen API when supported
 - Automatic page refresh every 10 minutes
 - Basic graceful handling of NWS API failures
 - Layout optimized for a 1024×600 landscape display
@@ -85,11 +87,9 @@ The NWS grid is based on the configured dashboard location.
 
 Current weather data shown includes:
 
-- temperature
-- short forecast / conditions
-- hourly forecast
-- probability of precipitation
-- upcoming forecast periods
+- current temperature and conditions
+- five hourly periods with weather icon, temperature, wind speed, and probability of precipitation
+- five daily periods with weather icon, high/low temperatures, and probability of precipitation
 
 Hourly timestamps are converted from ISO timestamps into a human-readable format such as:
 
@@ -111,8 +111,10 @@ Current layout concept:
 │ Weather                                      │
 │                                              │
 │ Current temperature / conditions             │
-│ Hourly forecast                              │
-│ Upcoming forecast periods                    │
+│                                              │
+│ Five-hour forecast  │  Five-day forecast     │
+│ icon / temp / wind  │  icon / high / low     │
+│ precipitation       │  precipitation          │
 ├──────────────────────────────────────────────┤
 │                                              │
 │ Reserved for future modules                  │
@@ -125,6 +127,10 @@ Current layout concept:
 Do not build the Home Assistant or music modules yet unless explicitly requested.
 
 The current priority is to establish a clean foundation and reliable deployment workflow.
+
+The dashboard includes a visible Fullscreen button. It requests fullscreen for the
+document root using the standard Fullscreen API and older vendor-prefixed variants
+when available. Fullscreen behavior depends on the browser and Fire OS version.
 
 ## Development
 
@@ -150,10 +156,21 @@ python3 app.py
 The Flask development server currently listens on:
 
 ```text
-http://127.0.0.1:8000
+http://127.0.0.1:8080
 ```
 
-Port 8000 is used locally because macOS Control Center / AirPlay Receiver may occupy port 5000.
+Port 8080 is used locally. The development server binds to all network interfaces,
+so a device on the same LAN can access the dashboard at:
+
+```text
+http://<Mac-LAN-IP>:8080
+```
+
+For example:
+
+```text
+http://192.168.88.165:8080
+```
 
 Flask currently runs with debug mode enabled during local development, so Python changes are automatically detected and the development server reloads.
 
@@ -240,4 +257,3 @@ Before making significant architectural changes, preserve the current direction:
 - The production environment is a Proxmox-hosted Debian LXC.
 - The target display resolution is 1024×600 landscape.
 - The user prefers incremental development and does not want unrelated future modules implemented prematurely.
-
