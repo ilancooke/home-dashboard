@@ -23,7 +23,7 @@ Current functionality:
 - Layout optimized for a 1024×600 landscape display
 - Space reserved for future dashboard modules
 
-The app is currently developed locally on macOS and will be deployed to a Debian LXC container running on Proxmox.
+The app is developed locally on a MacBook and deployed to a Debian LXC container running on Proxmox.
 
 ## Intended Architecture
 
@@ -190,9 +190,7 @@ Initial container configuration:
 
 Python 3.11 is installed in the container.
 
-The application should eventually run as a persistent service rather than using Flask's development server.
-
-A likely deployment pattern is:
+The production application runs as a persistent systemd-managed Gunicorn service. The deployment pattern is:
 
 ```text
 Git repository
@@ -201,14 +199,42 @@ Proxmox Debian LXC
       ↓
 Python virtual environment
       ↓
-Gunicorn or another WSGI server
+Gunicorn
       ↓
 systemd service
       ↓
 Fire tablet browser
 ```
 
-The production server and service configuration have not yet been implemented.
+The service is installed on the container as `home-dashboard.service`:
+
+```ini
+[Unit]
+Description=Home Dashboard
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/home-dashboard
+ExecStart=/opt/home-dashboard/.venv/bin/gunicorn --bind 0.0.0.0:8080 app:app
+Restart=always
+User=root
+
+[Install]
+WantedBy=multi-user.target
+```
+
+The application is served from `/opt/home-dashboard` and listens on port `8080` on all container network interfaces. `Restart=always` keeps the service available after an unexpected exit, and `WantedBy=multi-user.target` enables it to start at boot.
+
+### Deploying Updates
+
+On the LXC container, run the deployment script from the application checkout:
+
+```bash
+cd /opt/home-dashboard
+./deploy.sh
+```
+
+The script pulls the latest Git changes, installs dependencies into the existing virtual environment, restarts `home-dashboard`, and prints the resulting service status. It stops immediately if any step fails.
 
 ## Design Principles
 
@@ -229,9 +255,6 @@ When extending this project:
 
 Near-term:
 
-- Commit the initial application to Git
-- Deploy the application to the Proxmox LXC
-- Run the application as a persistent system service
 - Make the dashboard reachable from other devices on the LAN
 - Load the dashboard from the Fire 7
 - Configure the Fire for an always-on / kiosk-like display
