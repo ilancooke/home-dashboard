@@ -114,6 +114,25 @@
             margin-top: 20px;
         }
 
+        .module-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 180px;
+            min-height: 56px;
+            padding: 10px 18px;
+            border: 1px solid #555;
+            border-radius: 6px;
+            background: #222;
+            color: white;
+            font-size: 20px;
+            text-decoration: none;
+        }
+
+        .module-link:active {
+            background: #444;
+        }
+
         .location {
             font-size: 20px;
             opacity: 0.7;
@@ -194,6 +213,7 @@
     {% endif %}
 
     <div class="future-panel">
+        <a class="module-link" href="/audio">Whole-Home Audio</a>
     </div>
 
     <script>
