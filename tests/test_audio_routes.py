@@ -70,8 +70,14 @@ class AudioRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         zones = response.get_json()
         self.assertEqual(len(zones), 6)
-        self.assertEqual(zones[0]["name"], "Zone 1")
-        self.assertEqual(zones[0]["source_name"], "Input 1")
+        self.assertEqual(zones[0]["name"], "Lounge")
+        self.assertEqual(zones[0]["source_name"], "Echo Dot")
+
+    def test_unused_zones_remain_available_through_the_api(self):
+        response = self.client.get("/api/audio/zones/5")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json()["name"], "Zone 5")
 
     def test_updates_a_valid_zone(self):
         response = self.client.post(

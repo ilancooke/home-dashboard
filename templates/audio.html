@@ -240,6 +240,9 @@
 
             function renderZone(status) {
                 var card = document.getElementById("zone-" + status.zone);
+                if (card === null) {
+                    return;
+                }
                 var state = card.querySelector(".state");
                 var power = card.querySelector(".power-button");
                 var source = card.querySelector(".source-select");

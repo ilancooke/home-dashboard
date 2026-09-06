@@ -2,7 +2,7 @@
 
 from flask import Blueprint, jsonify, render_template, request
 
-from .config import SOURCE_NAMES, ZONE_NAMES
+from .config import HARDWARE_ZONES, SOURCE_NAMES, VISIBLE_ZONES, ZONE_NAMES
 from .controller import (
     AudioResponseError,
     AudioTimeoutError,
@@ -16,7 +16,7 @@ class RequestValidationError(ValueError):
 
 
 def _validate_zone(zone):
-    if zone not in ZONE_NAMES:
+    if zone not in HARDWARE_ZONES:
         raise RequestValidationError("zone must be between 1 and 6")
     return zone
 
@@ -44,7 +44,7 @@ def _display_status(status):
     result = dict(status)
     zone = result["zone"]
     source = result["source"]
-    result["name"] = ZONE_NAMES[zone]
+    result["name"] = ZONE_NAMES.get(zone, f"Zone {zone}")
     result["source_name"] = SOURCE_NAMES.get(source, f"Input {source}")
     return result
 
@@ -56,7 +56,7 @@ def create_audio_blueprint(controller):
     def audio_page():
         return render_template(
             "audio.html",
-            zone_names=ZONE_NAMES,
+            zone_names={zone: ZONE_NAMES[zone] for zone in VISIBLE_ZONES},
             source_names=SOURCE_NAMES,
         )
 

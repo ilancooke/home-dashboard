@@ -163,8 +163,9 @@ web requests cannot interleave serial traffic. Serial failures close the stale
 connection and trigger a reconnect attempt; later requests can reconnect after the
 USB device reappears. Errors are returned through the API without crashing Flask.
 
-Zone and source display names are configured in `modules/audio/config.py`. They
-default to `Zone 1` through `Zone 6` and `Input 1` through `Input 6`.
+Zone and source display names are configured in `modules/audio/config.py`. The
+dashboard currently shows Lounge, Master Bathroom, Patio, and Living Room. Zones 5
+and 6 remain available through the API but are omitted from the UI until needed.
 
 Audio pages and API routes:
 
