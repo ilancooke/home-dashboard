@@ -18,7 +18,8 @@ Current functionality:
 - Five-hour forecast with weather icons, temperature, wind speed, and precipitation chance
 - Five-day forecast with weather icons, daily high/low temperatures, and precipitation chance
 - Fullscreen button using the browser Fullscreen API when supported
-- Automatic page refresh every 10 minutes
+- Automatic weather refresh every 10 minutes without leaving fullscreen
+- Persistent Weather / Whole-Home Audio navigation that keeps fullscreen active
 - Basic graceful handling of NWS API failures
 - Layout optimized for a 1024×600 landscape display
 - Six-zone Monoprice amplifier status and per-zone controls
@@ -77,8 +78,13 @@ home-dashboard/
 │       ├── protocol.py
 │       └── routes.py
 ├── templates/
+│   ├── base.html
 │   ├── index.html
 │   └── audio.html
+├── static/
+│   ├── dashboard.css
+│   ├── dashboard.js
+│   └── audio.js
 ├── tests/
 │   ├── test_audio_controller.py
 │   ├── test_audio_protocol.py
@@ -123,7 +129,8 @@ Current layout concept:
 
 ```text
 ┌──────────────────────────────────────────────┐
-│ Weather                                      │
+│ Weather | Whole-Home Audio        Fullscreen  │
+├──────────────────────────────────────────────┤
 │                                              │
 │ Current temperature / conditions             │
 │                                              │
@@ -131,8 +138,6 @@ Current layout concept:
 │ icon / temp / wind  │  icon / high / low     │
 │ precipitation       │  precipitation          │
 ├──────────────────────────────────────────────┤
-│                                              │
-│ Whole-Home Audio button                      │
 │                                              │
 │ Reserved for future Home Assistant controls  │
 │                                              │
@@ -147,8 +152,18 @@ The dashboard includes a visible Fullscreen button. It requests fullscreen for t
 document root using the standard Fullscreen API and older vendor-prefixed variants
 when available. Fullscreen behavior depends on the browser and Fire OS version.
 
-The Whole-Home Audio button opens a separate responsive control page so the main
-weather layout remains readable on the 1024×600 display.
+The shared top bar switches between Weather and Whole-Home Audio, highlighting the
+active view. A small JavaScript navigation layer replaces only the view content,
+keeping the same document and fullscreen session alive. The Fullscreen button is
+available in both views and changes to Exit fullscreen while active. Browser Back
+and Forward also switch views without reloading the document. Both `/` and `/audio`
+remain directly accessible, with ordinary links as a fallback for browsers without
+the required navigation APIs.
+
+Weather refreshes in place every 10 minutes while its view is open, and is fetched
+again when returning from audio. Failed navigation requests retain the current view
+and show a retry message. Audio status polling runs only while the audio view is
+open. Navigation and refresh use XMLHttpRequest without a frontend framework.
 
 ## Whole-Home Audio Module
 

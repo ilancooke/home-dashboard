@@ -1,42 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="600">
-    <title>Weather Display</title>
-
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            background: #111;
-            color: white;
-            box-sizing: border-box;
-        }
-
-        #fullscreen-button {
-            position: fixed;
-            top: 12px;
-            right: 12px;
-            min-width: 110px;
-            min-height: 48px;
-            padding: 10px 14px;
-            border: 1px solid #555;
-            border-radius: 4px;
-            background: #222;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-            z-index: 10;
-        }
-
-        #fullscreen-button:active {
-            background: #444;
-        }
-
+{% extends "base.html" %}
+{% block title %}Weather Display{% endblock %}
+{% block view_name %}weather{% endblock %}
+{% block view_styles %}
         .weather-panel {
-            height: 300px;
+            min-height: 300px;
         }
 
         .current {
@@ -109,43 +76,14 @@
             line-height: 1.2;
         }
 
-        .future-panel {
-            height: 260px;
-            margin-top: 20px;
-        }
-
-        .module-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 180px;
-            min-height: 56px;
-            padding: 10px 18px;
-            border: 1px solid #555;
-            border-radius: 6px;
-            background: #222;
-            color: white;
-            font-size: 20px;
-            text-decoration: none;
-        }
-
-        .module-link:active {
-            background: #444;
-        }
-
         .location {
             font-size: 20px;
             opacity: 0.7;
             margin-bottom: 6px;
         }
         
-    </style>
-</head>
-
-<body>
-
-    <button id="fullscreen-button" type="button">Fullscreen</button>
-
+    {% endblock %}
+{% block content %}
     {% if error %}
 
         <div class="weather-panel">
@@ -212,38 +150,4 @@
 
     {% endif %}
 
-    <div class="future-panel">
-        <a class="module-link" href="/audio">Whole-Home Audio</a>
-    </div>
-
-    <script>
-        (function () {
-            var fullscreenButton = document.getElementById("fullscreen-button");
-            var root = document.documentElement;
-
-            fullscreenButton.onclick = function () {
-                var requestFullscreen = root.requestFullscreen ||
-                    root.webkitRequestFullscreen ||
-                    root.mozRequestFullScreen ||
-                    root.msRequestFullscreen;
-
-                if (!requestFullscreen) {
-                    return;
-                }
-
-                try {
-                    var request = requestFullscreen.call(root);
-
-                    // Older implementations may not return a Promise.
-                    if (request && request.catch) {
-                        request.catch(function () {});
-                    }
-                } catch (error) {
-                    // Fullscreen may be unavailable or blocked by the browser.
-                }
-            };
-        }());
-    </script>
-
-</body>
-</html>
+{% endblock %}
