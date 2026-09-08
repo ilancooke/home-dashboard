@@ -3,6 +3,7 @@ import os
 from flask import Flask, render_template
 
 from modules.audio import MonopriceController, create_audio_blueprint
+from modules.cameras import FrigateClient, create_camera_blueprint
 from modules.weather import get_weather
 
 app = Flask(__name__)
@@ -10,6 +11,11 @@ audio_controller = MonopriceController(
     port=os.environ.get("AUDIO_SERIAL_PORT", "/dev/ttyUSB0")
 )
 app.register_blueprint(create_audio_blueprint(audio_controller))
+frigate_client = FrigateClient(
+    base_url=os.environ.get("FRIGATE_URL", "http://192.168.88.120:5000"),
+    access_token=os.environ.get("FRIGATE_API_TOKEN"),
+)
+app.register_blueprint(create_camera_blueprint(frigate_client))
 
 
 @app.route("/")

@@ -12,6 +12,7 @@
         <nav class="dashboard-nav" aria-label="Dashboard">
             <a href="/" data-view="weather"{% if request.path == '/' %} aria-current="page"{% endif %}>Weather</a>
             <a href="/audio" data-view="audio"{% if request.path == '/audio' %} aria-current="page"{% endif %}>Whole-Home Audio</a>
+            <a href="/cameras" data-view="cameras"{% if request.path == '/cameras' %} aria-current="page"{% endif %}>Cameras</a>
         </nav>
         <button id="fullscreen-button" type="button" aria-pressed="false">Fullscreen</button>
     </header>
@@ -20,6 +21,7 @@
         {% block content %}{% endblock %}
     </main>
     <script src="{{ url_for('static', filename='audio.js') }}"></script>
+    <script src="{{ url_for('static', filename='cameras.js') }}"></script>
     <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
 </body>
 </html>

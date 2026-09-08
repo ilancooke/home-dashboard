@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Cameras{% endblock %}
+{% block view_name %}cameras{% endblock %}
+{% block view_styles %}
+        .cameras-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .cameras-header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .cameras-header p {
+            margin: 0;
+            color: #aaa;
+            font-size: 16px;
+        }
+
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .camera-card {
+            min-width: 0;
+            overflow: hidden;
+            padding: 0;
+            border: 1px solid #3d3d3d;
+            border-radius: 8px;
+            background: #202020;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .camera-card:last-child:nth-child(3n + 2) {
+            grid-column: 2;
+        }
+
+        .camera-card:active {
+            border-color: #d7a62b;
+            background: #302910;
+        }
+
+        .camera-image-wrap {
+            position: relative;
+            display: block;
+            height: 150px;
+            background: #191919;
+        }
+
+        .camera-image {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-card.unavailable .camera-image {
+            display: none;
+        }
+
+        .camera-error {
+            display: none;
+            position: absolute;
+            inset: 0;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            color: #ffb4ab;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .camera-card.unavailable .camera-error {
+            display: flex;
+        }
+
+        .camera-name {
+            display: block;
+            padding: 10px 12px;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .camera-detail[hidden],
+        .camera-grid[hidden] {
+            display: none;
+        }
+
+        .camera-detail {
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .camera-detail-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .camera-detail-header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .camera-back {
+            min-height: 44px;
+            padding: 8px 14px;
+            border: 1px solid #555;
+            border-radius: 6px;
+            background: #2a2a2a;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .camera-detail-image-wrap {
+            position: relative;
+            height: 400px;
+            overflow: hidden;
+            border: 1px solid #3d3d3d;
+            border-radius: 8px;
+            background: #191919;
+        }
+
+        .camera-detail-image {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .camera-detail-error {
+            display: none;
+            position: absolute;
+            inset: 0;
+            align-items: center;
+            justify-content: center;
+            color: #ffb4ab;
+            font-size: 20px;
+        }
+
+        .camera-detail.unavailable .camera-detail-image {
+            display: none;
+        }
+
+        .camera-detail.unavailable .camera-detail-error {
+            display: flex;
+        }
+
+        @media (max-width: 700px) {
+            .camera-image-wrap {
+                height: 130px;
+            }
+
+            .camera-detail-image-wrap {
+                height: 260px;
+            }
+
+            .camera-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .camera-card:last-child:nth-child(3n + 2) {
+                grid-column: auto;
+            }
+
+            .camera-card:last-child:nth-child(2n + 1) {
+                grid-column: 1 / -1;
+                max-width: 50%;
+                width: 100%;
+                justify-self: center;
+            }
+        }
+{% endblock %}
+{% block content %}
+    <header class="cameras-header">
+        <h1>Cameras</h1>
+        <p id="camera-refresh-status">Snapshots refresh every 8 seconds</p>
+    </header>
+
+    <div class="camera-grid" aria-label="Camera snapshots">
+        {% for camera in cameras %}
+            <button class="camera-card" type="button" data-camera="{{ camera.identifier }}" data-camera-name="{{ camera.name }}">
+                <span class="camera-image-wrap">
+                    <img class="camera-image" alt="{{ camera.name }} camera snapshot">
+                    <span class="camera-error">Camera unavailable</span>
+                </span>
+                <span class="camera-name">{{ camera.name }}</span>
+            </button>
+        {% endfor %}
+    </div>
+
+    <section class="camera-detail" hidden aria-live="polite">
+        <header class="camera-detail-header">
+            <h1 id="camera-detail-name"></h1>
+            <button class="camera-back" type="button">All cameras</button>
+        </header>
+        <div class="camera-detail-image-wrap">
+            <img class="camera-detail-image" alt="">
+            <div class="camera-detail-error">Camera unavailable</div>
+        </div>
+    </section>
+{% endblock %}

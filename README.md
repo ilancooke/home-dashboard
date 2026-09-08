@@ -8,7 +8,7 @@ The application is intentionally being built as a modular monolith: one deployab
 
 ## Current Status
 
-The working modules are weather and whole-home audio.
+The working modules are weather, whole-home audio, and camera snapshots.
 
 Current functionality:
 
@@ -19,13 +19,15 @@ Current functionality:
 - Five-day forecast with weather icons, daily high/low temperatures, and precipitation chance
 - Fullscreen button using the browser Fullscreen API when supported
 - Automatic weather refresh every 10 minutes without leaving fullscreen
-- Persistent Weather / Whole-Home Audio navigation that keeps fullscreen active
+- Persistent Weather / Whole-Home Audio / Cameras navigation that keeps fullscreen active
 - Basic graceful handling of NWS API failures
 - Layout optimized for a 1024×600 landscape display
 - Six-zone Monoprice amplifier status and per-zone controls
 - Thread-safe RS-232 communication with reconnect handling
 - Responsive audio controls for desktop, phone, and tablet browsers
 - JSON API for audio status, power, source, volume, and mute
+- Five Frigate camera snapshots through the dashboard server
+- Full-size, touch-selected camera snapshot view
 
 The app is developed locally on a MacBook and deployed to a Debian LXC container running on Proxmox.
 
@@ -70,6 +72,7 @@ home-dashboard/
 ├── requirements.txt
 ├── modules/
 │   ├── __init__.py
+│   ├── cameras.py
 │   ├── weather.py
 │   └── audio/
 │       ├── __init__.py
@@ -79,16 +82,20 @@ home-dashboard/
 │       └── routes.py
 ├── templates/
 │   ├── base.html
+│   ├── cameras.html
 │   ├── index.html
 │   └── audio.html
 ├── static/
 │   ├── dashboard.css
 │   ├── dashboard.js
-│   └── audio.js
+│   ├── audio.js
+│   └── cameras.js
 ├── tests/
 │   ├── test_audio_controller.py
 │   ├── test_audio_protocol.py
-│   └── test_audio_routes.py
+│   ├── test_audio_routes.py
+│   ├── test_cameras.py
+│   └── test_dashboard_pages.py
 ├── .gitignore
 └── README.md
 ```
@@ -129,7 +136,7 @@ Current layout concept:
 
 ```text
 ┌──────────────────────────────────────────────┐
-│ Weather | Whole-Home Audio        Fullscreen  │
+│ Weather | Whole-Home Audio | Cameras Fullscreen │
 ├──────────────────────────────────────────────┤
 │                                              │
 │ Current temperature / conditions             │
@@ -152,8 +159,9 @@ The dashboard includes a visible Fullscreen button. It requests fullscreen for t
 document root using the standard Fullscreen API and older vendor-prefixed variants
 when available. Fullscreen behavior depends on the browser and Fire OS version.
 
-The shared top bar switches between Weather and Whole-Home Audio, highlighting the
-active view. A small JavaScript navigation layer replaces only the view content,
+The shared top bar switches between Weather, Whole-Home Audio, and Cameras,
+highlighting the active view. A small JavaScript navigation layer replaces only the
+view content,
 keeping the same document and fullscreen session alive. The Fullscreen button is
 available in both views and changes to Exit fullscreen while active. Browser Back
 and Forward also switch views without reloading the document. Both `/` and `/audio`
@@ -162,8 +170,28 @@ the required navigation APIs.
 
 Weather refreshes in place every 10 minutes while its view is open, and is fetched
 again when returning from audio. Failed navigation requests retain the current view
-and show a retry message. Audio status polling runs only while the audio view is
-open. Navigation and refresh use XMLHttpRequest without a frontend framework.
+and show a retry message. Audio status polling and camera snapshot refreshes run
+only while their views are open. Navigation and refresh use XMLHttpRequest without
+a frontend framework.
+
+## Cameras Module
+
+The Cameras view shows Back Patio, Driveway, East Gate, Front Yard, and West Gate
+as a three-column snapshot grid sized for the 1024×600 display. It refreshes visible
+snapshots every eight seconds. Tapping a camera shows a larger continuously refreshed
+snapshot; tap All cameras to return to the grid.
+
+The dashboard server proxies Frigate images rather than giving the tablet direct
+Frigate access. Its endpoint is `GET /api/cameras/<camera>/latest.jpg`; responses
+are not cached. The configured camera identifiers are in `modules/cameras.py`.
+
+By default the server uses `http://192.168.88.120:5000`. Set `FRIGATE_URL` to use a
+different Frigate endpoint. `FRIGATE_API_TOKEN` adds a Bearer token to Frigate image
+requests when an authenticated endpoint is configured.
+
+This first version intentionally uses still images, not live video. Adding a selected
+camera live stream is a later step after go2rtc is configured and tested with the
+Fire 7 browser.
 
 ## Whole-Home Audio Module
 

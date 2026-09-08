@@ -7,7 +7,24 @@
     var links = document.querySelectorAll(".dashboard-nav a");
     var pendingRequest = null;
     var currentPath = window.location.pathname;
-    var cleanupView = window.initializeAudio(view);
+    function initializeView(currentView) {
+        var cleanups = [];
+        var initializers = [window.initializeAudio, window.initializeCameras];
+        var index;
+
+        for (index = 0; index < initializers.length; index += 1) {
+            if (initializers[index]) {
+                cleanups.push(initializers[index](currentView));
+            }
+        }
+        return function () {
+            for (index = 0; index < cleanups.length; index += 1) {
+                cleanups[index]();
+            }
+        };
+    }
+
+    var cleanupView = initializeView(view);
 
     function fullscreenElement() {
         return document.fullscreenElement || document.webkitFullscreenElement ||
@@ -112,7 +129,7 @@
                     links[index].removeAttribute("aria-current");
                 }
             }
-            cleanupView = window.initializeAudio(view);
+            cleanupView = initializeView(view);
             pendingRequest = null;
             view.removeAttribute("aria-busy");
             showMessage("");

@@ -37,6 +37,7 @@ class DashboardPageTests(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn("Weather data temporarily unavailable.", html)
         self.assertIn('href="/audio"', html)
+        self.assertIn('href="/cameras"', html)
 
     @patch("app.audio_controller.get_all_zone_statuses")
     def test_direct_audio_page_has_shared_navigation_without_serial_access(self, get_zones):
