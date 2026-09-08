@@ -28,6 +28,7 @@ Current functionality:
 - JSON API for audio status, power, source, volume, and mute
 - Five Frigate camera snapshots through the dashboard server
 - Full-size, touch-selected camera snapshot view
+- Selected-camera MSE live view through Frigate go2rtc, with snapshot fallback
 
 The app is developed locally on a MacBook and deployed to a Debian LXC container running on Proxmox.
 
@@ -178,8 +179,9 @@ a frontend framework.
 
 The Cameras view shows Back Patio, Driveway, East Gate, Front Yard, and West Gate
 as a three-column snapshot grid sized for the 1024×600 display. It refreshes visible
-snapshots every eight seconds. Tapping a camera shows a larger continuously refreshed
-snapshot; tap All cameras to return to the grid.
+snapshots every eight seconds. Tapping a camera starts its MSE live view through
+Frigate go2rtc; if the browser cannot play the stream, the larger view falls back to
+continuously refreshed snapshots. Tap All cameras to return to the grid.
 
 The dashboard server proxies Frigate images rather than giving the tablet direct
 Frigate access. Its endpoint is `GET /api/cameras/<camera>/latest.jpg`; responses
@@ -187,11 +189,14 @@ are not cached. The configured camera identifiers are in `modules/cameras.py`.
 
 By default the server uses `http://192.168.88.120:5000`. Set `FRIGATE_URL` to use a
 different Frigate endpoint. `FRIGATE_API_TOKEN` adds a Bearer token to Frigate image
-requests when an authenticated endpoint is configured.
+requests when an authenticated endpoint is configured. The live player obtains a
+WebSocket URL through `GET /api/cameras/<camera>/live`, then connects directly to
+Frigate's `/live/mse/api/ws` proxy. Set `FRIGATE_LIVE_URL` if the tablet must use a
+different reachable Frigate hostname or address for live video.
 
-This first version intentionally uses still images, not live video. Adding a selected
-camera live stream is a later step after go2rtc is configured and tested with the
-Fire 7 browser.
+The current Frigate streams use H.265. Modern browsers may play them through MSE,
+but the Fire 7 may not. Configure each camera's substream as H.264 for reliable
+tablet live video without VM transcoding.
 
 ## Whole-Home Audio Module
 

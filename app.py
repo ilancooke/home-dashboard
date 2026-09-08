@@ -13,6 +13,7 @@ audio_controller = MonopriceController(
 app.register_blueprint(create_audio_blueprint(audio_controller))
 frigate_client = FrigateClient(
     base_url=os.environ.get("FRIGATE_URL", "http://192.168.88.120:5000"),
+    live_url=os.environ.get("FRIGATE_LIVE_URL"),
     access_token=os.environ.get("FRIGATE_API_TOKEN"),
 )
 app.register_blueprint(create_camera_blueprint(frigate_client))

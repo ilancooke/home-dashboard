@@ -20,6 +20,10 @@ class FakeFrigateClient:
             raise FrigateUnavailableError("Frigate camera image is unavailable")
         return b"camera-image", "image/jpeg"
 
+    @staticmethod
+    def mse_websocket_url(camera):
+        return "ws://frigate.example/live/mse/api/ws?src=" + camera.identifier
+
 
 class CameraRouteTests(unittest.TestCase):
     def setUp(self):
@@ -59,6 +63,16 @@ class CameraRouteTests(unittest.TestCase):
         self.assertEqual(response.content_type, "image/jpeg")
         self.assertEqual(response.headers["Cache-Control"], "no-store, max-age=0")
         self.assertEqual(self.frigate.calls, [Camera("front_yard", "Front Yard")])
+
+    def test_live_endpoint_returns_only_a_known_camera_url(self):
+        response = self.client.get("/api/cameras/driveway/live")
+        unknown_response = self.client.get("/api/cameras/unknown/live")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.get_json(), {
+            "url": "ws://frigate.example/live/mse/api/ws?src=driveway",
+        })
+        self.assertEqual(unknown_response.status_code, 404)
 
     def test_unknown_camera_and_frigate_errors_are_safe(self):
         unknown_response = self.client.get("/api/cameras/unknown/latest.jpg")

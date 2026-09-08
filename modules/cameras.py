@@ -1,6 +1,7 @@
 """Frigate camera snapshots for the home dashboard."""
 
 from dataclasses import dataclass
+from urllib.parse import urlencode, urlsplit, urlunsplit
 
 import requests
 from flask import Blueprint, Response, jsonify, render_template
@@ -27,8 +28,9 @@ class FrigateUnavailableError(RuntimeError):
 
 
 class FrigateClient:
-    def __init__(self, base_url, access_token=None, session=requests):
+    def __init__(self, base_url, live_url=None, access_token=None, session=requests):
         self.base_url = base_url.rstrip("/")
+        self.live_url = (live_url or base_url).rstrip("/")
         self.access_token = access_token
         self.session = session
 
@@ -52,6 +54,19 @@ class FrigateClient:
             raise FrigateUnavailableError("Frigate returned an invalid camera image")
 
         return response.content, content_type
+
+    def mse_websocket_url(self, camera):
+        parts = urlsplit(self.live_url)
+        scheme = {"http": "ws", "https": "wss"}.get(parts.scheme)
+        if scheme is None or not parts.netloc:
+            raise FrigateUnavailableError("Frigate live URL is invalid")
+        return urlunsplit((
+            scheme,
+            parts.netloc,
+            "/live/mse/api/ws",
+            urlencode({"src": camera.identifier}),
+            "",
+        ))
 
 
 def create_camera_blueprint(client):
@@ -80,6 +95,13 @@ def create_camera_blueprint(client):
             content_type=content_type,
             headers={"Cache-Control": "no-store, max-age=0"},
         )
+
+    @blueprint.get("/api/cameras/<camera_id>/live")
+    def live_stream(camera_id):
+        camera = CAMERAS_BY_IDENTIFIER.get(camera_id)
+        if camera is None:
+            return jsonify(error="Unknown camera"), 404
+        return jsonify(url=client.mse_websocket_url(camera))
 
     @blueprint.errorhandler(FrigateUnavailableError)
     def frigate_unavailable(error):
