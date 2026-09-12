@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Floorplan{% endblock %}
+{% block view_name %}floorplan{% endblock %}
+{% block view_styles %}
+    .fp-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .fp-heading h1 { font-size: 22px; margin: 0; }
+    #fp-summary { margin: 0; font-size: 17px; color: #ffd18b; }
+    #fp-summary[data-status="closed"] { color: #9ccfff; }
+    #fp-summary[data-status="open"] { color: #ff9b9b; }
+    .fp-layout { display: flex; height: calc(100vh - 168px); min-height: 390px; gap: 12px; }
+    .fp-map-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; gap: 8px; }
+    .fp-toolbar { display: flex; align-items: center; gap: 8px; }
+    .fp-toolbar button, #fp-filter { min-height: 44px; padding: 8px 12px; border: 1px solid #596b81; border-radius: 6px; background: #253142; color: white; font: inherit; cursor: pointer; }
+    .fp-toolbar button:disabled { opacity: .45; cursor: default; }
+    .fp-key { margin-left: auto; color: #bfc9d4; font-size: 12px; }
+    .fp-canvas { position: relative; flex: 1; min-height: 0; background: white; border-radius: 8px; overflow: hidden; }
+    #fp-map { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .fp-sensor { cursor: pointer; outline: none; }
+    .fp-lead { stroke: #b5740a; stroke-width: 2; vector-effect: non-scaling-stroke; }
+    .fp-anchor, .fp-ring { fill: #a86200; stroke: white; stroke-width: 2; vector-effect: non-scaling-stroke; }
+    .fp-symbol { fill: white; font-family: Arial, sans-serif; font-weight: bold; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+    .fp-sensor[data-state="closed"] .fp-ring, .fp-sensor[data-state="closed"] .fp-anchor { fill: #166cb0; }
+    .fp-sensor[data-state="closed"] .fp-lead { stroke: #166cb0; opacity: .55; }
+    .fp-sensor[data-state="open"] .fp-ring, .fp-sensor[data-state="open"] .fp-anchor { fill: #ca2130; }
+    .fp-sensor[data-state="open"] .fp-lead { stroke: #ca2130; stroke-width: 3; }
+    .fp-halo { fill: #ed2239; opacity: 0; pointer-events: none; }
+    .fp-sensor[data-state="open"] .fp-halo { opacity: .18; }
+    .fp-sensor[data-selected="true"] .fp-ring, .fp-sensor:focus .fp-ring { stroke: #152238; stroke-width: 4; }
+    .fp-sensor.fp-pulse .fp-halo { animation: fp-pulse 1s ease-in-out 3; }
+    @keyframes fp-pulse { 50% { opacity: .55; } }
+    @media (prefers-reduced-motion: reduce) { .fp-sensor.fp-pulse .fp-halo { animation: none; } }
+    .fp-side { width: 275px; flex-shrink: 0; display: flex; flex-direction: column; min-height: 0; }
+    .fp-side-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+    .fp-side-heading h2 { font-size: 17px; margin: 0; }
+    #fp-filter { font-size: 13px; padding: 7px; }
+    #fp-connection { font-size: 12px; color: #c4c4c4; margin: 0 0 8px; line-height: 1.4; }
+    #fp-list { display: flex; flex-direction: column; overflow-y: auto; flex: 1; min-height: 0; }
+    .fp-list-sensor { width: 100%; min-height: 49px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; text-align: left; padding: 6px; color: white; background: #202733; border: 1px solid #3c4653; border-radius: 5px; margin-bottom: 4px; font: inherit; cursor: pointer; }
+    .fp-list-sensor[hidden] { display: none; }
+    .fp-list-sensor[aria-pressed="true"] { border-color: #ffd395; background: #403321; }
+    .fp-list-symbol { background: #a86200; border-radius: 50%; min-width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .fp-list-sensor[data-state="open"] .fp-list-symbol { background: #ca2130; }
+    .fp-list-sensor[data-state="closed"] .fp-list-symbol { background: #166cb0; }
+    .fp-list-name { display: block; font-size: 14px; }
+    .fp-list-state { display: block; font-size: 12px; color: #d0d5dc; margin-top: 3px; }
+    #fp-empty { font-size: 14px; color: #c4d5e5; line-height: 1.5; }
+    #fp-detail { border-top: 1px solid #555; padding-top: 8px; margin-top: 8px; font-size: 13px; line-height: 1.5; min-height: 50px; }
+    #fp-detail strong { color: #ffd395; display: block; }
+    @media (max-width: 700px) { .fp-heading { display: block; } #fp-summary { margin-top: 6px; font-size: 15px; } .fp-layout { display: block; height: auto; } .fp-map-panel { height: 65vh; min-height: 370px; } .fp-side { width: 100%; margin-top: 14px; } #fp-list { max-height: 280px; } .fp-key { display: none; } }
+{% endblock %}
+{% block content %}
+<div class="fp-heading"><h1>Floorplan</h1><p id="fp-summary" role="status">Checking sensor status…</p></div>
+<div class="fp-layout">
+    <section class="fp-map-panel" aria-label="House sensor map">
+        <div class="fp-toolbar"><button id="fp-whole" type="button">Whole house</button><button id="fp-zoom" type="button" disabled>Enlarge selected</button><span class="fp-key">Blue: closed · ! Open · ? Unavailable</span></div>
+        <div class="fp-canvas">
+            <svg id="fp-map" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1341 1030" aria-label="House floorplan with door and window sensors">
+                <image href="{{ url_for('static', filename='house-floorplan.png') }}" xlink:href="{{ url_for('static', filename='house-floorplan.png') }}" width="1341" height="1173"/>
+                {% for sensor in sensors %}
+                <g class="fp-sensor" id="fp-sensor-{{ sensor.id }}" data-id="{{ sensor.id }}" data-name="{{ sensor.name }}" data-x="{{ sensor.x }}" data-y="{{ sensor.y }}" data-state="unavailable" role="button" tabindex="0" aria-label="{{ sensor.name }}: checking status">
+                    <title>{{ sensor.id }}. {{ sensor.name }}</title>
+                    <line class="fp-lead" x1="{{ sensor.x }}" y1="{{ sensor.y }}" x2="{{ sensor.bx }}" y2="{{ sensor.by }}"/>
+                    <circle class="fp-anchor" cx="{{ sensor.x }}" cy="{{ sensor.y }}" r="7"/>
+                    <circle class="fp-hit" cx="{{ sensor.bx }}" cy="{{ sensor.by }}" r="44" fill="transparent"/>
+                    <circle class="fp-halo" cx="{{ sensor.bx }}" cy="{{ sensor.by }}" r="42"/>
+                    <circle class="fp-ring" cx="{{ sensor.bx }}" cy="{{ sensor.by }}" r="29"/>
+                    <text class="fp-symbol" x="{{ sensor.bx }}" y="{{ sensor.by }}" font-size="32">?</text>
+                </g>
+                {% endfor %}
+            </svg>
+        </div>
+    </section>
+    <aside class="fp-side" aria-label="Sensor status">
+        <div class="fp-side-heading"><h2 id="fp-list-heading">Open / unavailable</h2><button id="fp-filter" type="button" aria-pressed="false">Show all 17</button></div>
+        <p id="fp-connection">Connecting to Home Assistant…</p>
+        <div id="fp-list">
+            {% for sensor in sensors %}
+            <button class="fp-list-sensor" id="fp-list-{{ sensor.id }}" type="button" data-state="unavailable" aria-pressed="false"><span class="fp-list-symbol">?</span><span><span class="fp-list-name">{{ sensor.id }}. {{ sensor.name }}</span><span class="fp-list-state">Checking…</span></span></button>
+            {% endfor %}
+        </div>
+        <p id="fp-empty" hidden>All monitored openings are closed.</p>
+        <div id="fp-detail" aria-live="polite">Tap a marker or sensor name for details.</div>
+    </aside>
+</div>
+<noscript>JavaScript is required to display live sensor status.</noscript>
+{% endblock %}

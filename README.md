@@ -8,7 +8,7 @@ The application is intentionally being built as a modular monolith: one deployab
 
 ## Current Status
 
-The working modules are weather, whole-home audio, and camera snapshots.
+The working modules are weather, whole-home audio, cameras, and a Home Assistant floorplan.
 
 Current functionality:
 
@@ -19,7 +19,7 @@ Current functionality:
 - Five-day forecast with weather icons, daily high/low temperatures, and precipitation chance
 - Fullscreen button using the browser Fullscreen API when supported
 - Automatic weather refresh every 10 minutes without leaving fullscreen
-- Persistent Weather / Whole-Home Audio / Cameras navigation that keeps fullscreen active
+- Persistent Weather / Whole-Home Audio / Cameras / Floorplan navigation that keeps fullscreen active
 - Basic graceful handling of NWS API failures
 - Layout optimized for a 1024×600 landscape display
 - Six-zone Monoprice amplifier status and per-zone controls
@@ -29,6 +29,8 @@ Current functionality:
 - Five Frigate camera snapshots through the dashboard server
 - Full-size, touch-selected camera snapshot view
 - Selected-camera MSE live view through Frigate go2rtc, with snapshot fallback
+- Home Assistant floorplan with 17 approved door/window sensor placements
+- Live open/closed/unavailable indicators, issue list, and touch-selected zoom
 
 The app is developed locally on a MacBook and deployed to a Debian LXC container running on Proxmox.
 
@@ -74,6 +76,8 @@ home-dashboard/
 ├── modules/
 │   ├── __init__.py
 │   ├── cameras.py
+│   ├── floorplan_config.py
+│   ├── home_assistant.py
 │   ├── weather.py
 │   └── audio/
 │       ├── __init__.py
@@ -84,11 +88,14 @@ home-dashboard/
 ├── templates/
 │   ├── base.html
 │   ├── cameras.html
+│   ├── floorplan.html
 │   ├── index.html
 │   └── audio.html
 ├── static/
 │   ├── dashboard.css
 │   ├── dashboard.js
+│   ├── floorplan.js
+│   ├── house-floorplan.png
 │   ├── audio.js
 │   └── cameras.js
 ├── tests/
@@ -96,6 +103,7 @@ home-dashboard/
 │   ├── test_audio_protocol.py
 │   ├── test_audio_routes.py
 │   ├── test_cameras.py
+│   ├── test_home_assistant.py
 │   └── test_dashboard_pages.py
 ├── .gitignore
 └── README.md
@@ -152,7 +160,7 @@ Current layout concept:
 └──────────────────────────────────────────────┘
 ```
 
-Do not build the Home Assistant module yet unless explicitly requested.
+The Home Assistant floorplan module is read-only; controls are outside its scope.
 
 The current priority is to establish a clean foundation and reliable deployment workflow.
 
@@ -239,6 +247,61 @@ Protocol references:
 - [pyxantech](https://github.com/rsnodgrass/pyxantech)
 
 ## Development
+
+### Home Assistant Floorplan
+
+The `/floorplan` view uses `static/house-floorplan.png` and the approved coordinates
+and entity IDs in `modules/floorplan_config.py`. These files are deployed with the
+application; nothing in the ignored `temp/` folder is required at runtime.
+
+Add your Home Assistant credentials to the project-root `.env` (see `.env.example`):
+
+```ini
+HA_URL=http://192.168.88.56:8123
+HA_TOKEN=your-long-lived-access-token
+```
+
+Keep `.env` private and outside Git. On the LXC, use `/opt/home-dashboard/.env`
+and restrict it with `chmod 600 /opt/home-dashboard/.env`. The app explicitly loads
+this file relative to `app.py`, both locally and under Gunicorn. Existing process
+environment variables take precedence. An existing systemd `EnvironmentFile`
+override is compatible but not required. Restart the service after changing credentials.
+The token stays on the server and is never included in HTML, JavaScript, or API responses.
+
+`GET /api/ha/floorplan` reads HA's `/api/states`, filters to the 17 configured
+entities, and returns normalized states. Binary sensor `on` means open and `off`
+means closed; other states and missing entities mean unavailable. Per-sensor
+`open_state` / `closed_state` overrides are available in the configuration if
+physical testing identifies an inverted contact. No device actions are exposed.
+
+The browser polls two seconds after each completed request while the floorplan is
+visible. A thread-safe, three-second server cache shares successful and failed
+responses across clients (typically about four seconds between HA reads). No
+background polling, database, or WebSocket worker is needed. Keep the existing
+single Gunicorn worker for the serial amplifier and shared in-process cache.
+HA requests have bounded connect/read timeouts; failures may briefly occupy the
+single worker before a cached unavailable response is returned.
+
+Closed contacts are small blue dots. Open contacts have large red exclamation
+marks and a halo; newly opened contacts pulse briefly. Missing/unknown contacts
+show amber question marks. The issue list shows open contacts first, followed by
+unavailable ones; Show all includes closed contacts. Tap any marker or list item
+for its name and last state-change time, then Enlarge selected to zoom.
+
+Connection failures invalidate current sensor status rather than displaying old
+closed readings. The browser also marks data unavailable after 12 seconds without
+a successful update and immediately refreshes when a hidden tab becomes visible.
+The API returns 503 with a safe status payload for configuration/authentication/
+connection failures, and 200 for successful HA reads even if individual sensors
+are unavailable. Responses are not browser-cached.
+
+After deployment, open and close each monitored opening to confirm entity mapping,
+contact polarity, and placement. "All monitored openings closed" does not report
+lock status or alarm arming. See the official
+[Home Assistant REST API](https://developers.home-assistant.io/docs/api/rest/) and
+[binary sensor states](https://www.home-assistant.io/integrations/binary_sensor/).
+
+### Local setup
 
 Create and activate a local virtual environment:
 

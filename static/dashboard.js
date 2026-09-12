@@ -9,7 +9,7 @@
     var currentPath = window.location.pathname;
     function initializeView(currentView) {
         var cleanups = [];
-        var initializers = [window.initializeAudio, window.initializeCameras];
+        var initializers = [window.initializeAudio, window.initializeCameras, window.initializeFloorplan];
         var index;
 
         for (index = 0; index < initializers.length; index += 1) {
